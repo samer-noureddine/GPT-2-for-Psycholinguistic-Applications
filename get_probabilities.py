@@ -1,9 +1,7 @@
 import torch
 from transformers import GPT2Tokenizer, GPT2LMHeadModel
 import math
-import logging
 import matplotlib.pyplot as plt
-logging.basicConfig(level=logging.INFO)
 import pandas
 import numpy as np
 
@@ -22,9 +20,6 @@ def Sort_Tuple(tup):
 
 # Load pre-trained model (weights) - this takes the most time
 model = GPT2LMHeadModel.from_pretrained('gpt2-large', output_hidden_states = True, output_attentions = True)
-
-# Set the model in evaluation mode to desactivate the DropOut modules
-# This is IMPORTANT to have reproductible results during evaluation!
 model.eval()
 
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2-large')
