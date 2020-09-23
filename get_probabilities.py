@@ -1,12 +1,11 @@
 import torch
 from transformers import GPT2Tokenizer, GPT2LMHeadModel
-import math
 import matplotlib.pyplot as plt
 import pandas
 import numpy as np
 
 def softmax(x):
-	exps = [math.exp(i) for i in x]
+	exps = [np.exp(i) for i in x]
 	tot= sum(exps)
 	return [i/tot for i in exps]
     
