@@ -209,7 +209,7 @@ def attn_entropy(p):
     return entropy
 
 def sentence_entropy(s1):
-    '''given sentences s1 and s2, compute the mean entropy
+    '''given sentence s1, compute the mean entropy
        in each layer (each head has one entropy value)
     '''
     with torch.no_grad():
