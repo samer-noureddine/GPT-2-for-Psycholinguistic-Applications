@@ -199,4 +199,26 @@ def compare_attn(data1,data2, mi, ma):
         ax.plot([x]*len(yz), *zip(*yz),'b')
     for x, yz in data2:
         ax.plot([x]*len(yz), *zip(*yz),'r')
-        
+       
+
+def attn_entropy(p):
+    p = np.array(p)
+    logp = np.log(p)/np.log(2)
+    plogp = p*logp
+    entropy = -np.sum(plogp)
+    return entropy
+
+def sentence_entropy(s1):
+    '''given sentences s1 and s2, compute the mean entropy
+       in each layer (each head has one entropy value)
+    '''
+    with torch.no_grad():
+        out1 = model(torch.tensor(tokenizer.encode(s1)))
+    allweights = [[attn_weights(out1,h,l) for h in range(20)] for l in range(36)]
+    all_entropy = [[attn_entropy(attn_weights(out1,h,l)) for h in range(20)] for l in range(36)]
+    mean_ent = [np.mean(np.array(all_entropy[i])) for i in range(len(all_entropy))]
+    return mean_ent
+# set up the model and tokenizer
+model = GPT2LMHeadModel.from_pretrained('gpt2-large', output_hidden_states = True, output_attentions = True)
+model.eval()
+tokenizer = GPT2Tokenizer.from_pretrained('gpt2-large')
