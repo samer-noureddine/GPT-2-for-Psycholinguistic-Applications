@@ -1,4 +1,3 @@
-''' figuring out what I can get from the model '''
 import math
 import matplotlib.pyplot as plt
 import torch
