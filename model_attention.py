@@ -1,3 +1,6 @@
+'''
+Author: Samer Nour Eddine (snoure01@tufts.edu)
+'''
 import math
 import matplotlib.pyplot as plt
 import torch
