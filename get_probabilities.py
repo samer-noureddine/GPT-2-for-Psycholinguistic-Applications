@@ -1,7 +1,6 @@
+# Author: Samer Nour Eddine (snoure01@tufts.edu) #
 import torch
 from transformers import GPT2Tokenizer, GPT2LMHeadModel
-import matplotlib.pyplot as plt
-import pandas
 import numpy as np
 
 def softmax(x):
@@ -50,7 +49,7 @@ def cloze_finalword(text):
         outputs = model(tokens_tensor)
         predictions = outputs[0]   
 
-    raw_probabilities = []
+    logprobs = []
     # start at the stem and get downstream probabilities incrementally from the model(see above)
     # I should make the below code less awkward when I find the time
     start = -1-len(cw_encoding)
@@ -59,18 +58,18 @@ def cloze_finalword(text):
             for i in predictions[-1][j]:
                     raw_output.append(i.item())
     
-            raw_probabilities.append(softmax(raw_output))
+            logprobs.append(np.log(softmax(raw_output)))
             
     # if the critical word is three tokens long, the raw_probabilities should look something like this:
     # [ [0.412, 0.001, ... ] ,[0.213, 0.004, ...], [0.002,0.001, 0.93 ...]]
     # Then for the i'th token we want to find its associated probability
     # this is just: raw_probabilities[i][token_index]
     conditional_probs = []
-    for cw,prob in zip(cw_encoding,raw_probabilities):
+    for cw,prob in zip(cw_encoding,logprobs):
             conditional_probs.append(prob[cw])
     # now that you have all the relevant probabilities, return their product.
     # This is the probability of the critical word given the context before it.
-    return np.prod(conditional_probs)
+    return np.exp(np.sum(conditional_probs))
 
 def cloze_generator(text, critical_word, top_ten = False, constraint = False):
     '''
@@ -100,9 +99,9 @@ def cloze_generator(text, critical_word, top_ten = False, constraint = False):
     for i in predictions[-1][-1]:
             raw_output.append(i.item())
 
-    raw_probabilities = softmax(raw_output)
-    sorted_probabilities = Sort_Tuple([(i,j) for i,j in enumerate(raw_probabilities)])
-    sorted_words = [(tokenizer.decode(i[0]).strip(), i[1]) for i in sorted_probabilities]
+    logprobs = np.log(softmax(raw_output))
+    sorted_logprobs = Sort_Tuple([(i,j) for i,j in enumerate(logprobs)])
+    sorted_words = [(tokenizer.decode(i[0]).strip(), np.exp(i[1])) for i in sorted_logprobs]
     if top_ten:
             h = []
             for i in zip(*sorted_words):
@@ -111,11 +110,5 @@ def cloze_generator(text, critical_word, top_ten = False, constraint = False):
                 print(sorted_words[:10])
                 print("*****")
     if constraint:
-            return sorted_probabilities[0][1]
+            return np.exp(sorted_logprobs[0][1])
     return cloze_finalword(' '.join([text, critical_word]))
-	
-
-
-
-
-
