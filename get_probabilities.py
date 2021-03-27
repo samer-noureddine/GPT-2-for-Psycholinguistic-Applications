@@ -1,4 +1,4 @@
-# Author: Samer Nour Eddine (snoure01@tufts.edu) #
+# Author: Samer Nour Eddine (snoure01@tufts.edu)
 import torch
 from transformers import GPT2Tokenizer, GPT2LMHeadModel
 import numpy as np
@@ -76,15 +76,9 @@ def cloze_generator(text, critical_word, top_ten = False, constraint = False):
     run text through model, then output the probability of critical_word given the text.
     This is quite redundant with the cloze_nonword function. I should fix this later.
     '''
-
-
-
     # Encode a text inputs
-
     indexed_tokens = tokenizer.encode(text)
-
     tokens_tensor = torch.tensor([indexed_tokens])
-
 
     # Predict all tokens
     with torch.no_grad():
