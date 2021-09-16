@@ -27,16 +27,16 @@ model.eval()
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2-large')
 
 '''
-This Function parses the text into word tokins and mark the composition of the 
-text (i.e., the pos of a word in the sentence/text ). This function is
-necessary because GPT2 tokenizer will likely break words into sub-word tokens.
-By first dividing the text into word-level tokins (which also grants us the
+This function parses the text into word tokens and marks the composition of the 
+text (i.e., the position of a word in the sentence/text). This function is
+necessary because the GPT2 tokenizer will likely break words into sub-word tokens.
+By first dividing the text into word-level tokens (which also grants us the
 liberty of defining "words": e.g., we want to count the period as part of the 
-last word) and then passing each tokin to the GPT2 tokenizer, we know how each
-word is converted into sub-word tokins and can therefore calculate the cloze of
+last word) and then passing each token to the GPT2 tokenizer, we know how each
+word is converted into sub-word tokens and can therefore calculate the cloze of
 each word by calculating the conditional probabilities of each word's sub-word
-tokins. (Note that GPT2 Tokenizer is context independent, so it doesn't matter
-whether we pass the words individually or we pass the entire text altogether)
+tokens. (Note that tokenization is the same regardless of whether we pass the words
+individually or whether we pass the entire text at once)
 
 text:		  text to parse
 tkn_regex:	  token regular expression. Defines how the text is seperated into
@@ -82,10 +82,10 @@ def parse_text(text, tkn_regex=r" *[\w'\"\.!?-]+", bl_regex=r"\.\.+|[,;]| -", eo
 
 '''
 This function uses GPT2 to generate the cloze probabilities of a given list of
-word-level tokins. One way to obtain such tokins is to pass the text to the
+word-level tokens. One way to obtain such tokens is to pass the text to the
 function parse_text, and pass its output text_tkn as an input to this function. This function will calculate the conditional probability of each of the 
-word-level tokin given the tokins preceeding it. Importantly, the first 
-word-level tokin is assigned with the probability value of 0.
+word-level token given the tokens preceeding it. Importantly, the first 
+word-level token is assigned with the probability value of 0.
 '''
 def cloze_allword(text_tkn):
 	pos_arr = []
@@ -142,7 +142,7 @@ def cloze_finalword(text):
 	print (cw_encoding)
 	print (whole_text_encoding)
 
-	# Run the entire sentence through the model. Then go back in time and look at what the model predicted for each token, starting at the stem.
+	# Run the entire sentence through the model. Then go "back in time" to look at what the model predicted for each token, starting at the stem.
 	# e.g., for 'Joe flicked the grasshopper', go back to when the model had just received 'Joe flicked the' and
 	# find the probability for the next token being 'grass'. Then for 'Joe flicked the grass' find the probability that
 	# the next token will be 'ho'. Then for 'Joe flicked the grassho' find the probability that the next token will be 'pper'.
