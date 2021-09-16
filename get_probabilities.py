@@ -1,7 +1,7 @@
 ''' 
 Authors: 
 	Samer Nour Eddine (snoure01@tufts.edu)
-	Feng Cheng (fcheng6@harvard.mgh.edu)
+	Feng Cheng (fcheng6@mgh.harvard.edu)
 '''
 
 import torch
