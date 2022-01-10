@@ -176,8 +176,6 @@ def cloze_finalword(text):
 	# e.g., in 'Joe flicked the grasshopper', the difference between stem and whole text (i.e., the cw) is not 'grasshopper', but
 	# instead it is ' grass','ho', and 'pper'. This is important when calculating the probability of that sequence.
 	cw_encoding = whole_text_encoding[len(stem_encoding):]
-	print (cw_encoding)
-	print (whole_text_encoding)
 
 	# Run the entire sentence through the model. Then go "back in time" to look at what the model predicted for each token, starting at the stem.
 	# e.g., for 'Joe flicked the grasshopper', go back to when the model had just received 'Joe flicked the' and
@@ -209,7 +207,6 @@ def cloze_finalword(text):
 	# this is just: raw_probabilities[i][token_index]
 	conditional_probs = []
 	for cw,prob in zip(cw_encoding,logprobs):
-			print (prob[cw])
 			conditional_probs.append(prob[cw])
 	# now that you have all the relevant probabilities, return their product.
 	# This is the probability of the critical word given the context before it.
