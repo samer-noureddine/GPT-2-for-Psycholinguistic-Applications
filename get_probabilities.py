@@ -27,29 +27,24 @@ model.eval()
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2-large')
 
 '''
-This function parses the text into word tokens and marks the composition of the 
-text (i.e., the position of a word in the sentence/text). This function is
-necessary because the GPT2 tokenizer will likely break words into sub-word tokens.
-By first dividing the text into word-level tokens (which also grants us the
+This function parses the text into word tokins and mark the composition of the 
+text (i.e., the pos of a word in the sentence/text ). This function is
+necessary because GPT2 tokenizer will likely break words into sub-word tokens.
+By first dividing the text into word-level tokins (which also grants us the
 liberty of defining "words": e.g., we want to count the period as part of the 
-last word) and then passing each token to the GPT2 tokenizer, we know how each
-word is converted into sub-word tokens and can therefore calculate the cloze of
+last word) and then passing each tokin to the GPT2 tokenizer, we know how each
+word is converted into sub-word tokins and can therefore calculate the cloze of
 each word by calculating the conditional probabilities of each word's sub-word
-tokens. (Note that tokenization is the same regardless of whether we pass the words
-individually or whether we pass the entire text at once)
+tokins. (Note that GPT2 Tokenizer is context independent, so it doesn't matter
+whether we pass the words individually or we pass the entire text altogether)
 
 text:		  text to parse
 tkn_regex:	  token regular expression. Defines how the text is seperated into
               tokens. 
 bl_regex:	  blacklist regular expression. Defines what characters will be 
 			  deleted
-eos_chars:	  characters that mark the end of sentence. If None is passed,
-			  the function will no longer mark the composition of the text
-eos_char_pos: the position where eos characters are expected. By default the
-			  function will look for the last char in every string to identify
-			  eos
 '''
-def parse_text(text, tkn_regex=r" *[\w'\"\.!?-]+", bl_regex=r"\.\.+|[,;]| -", eos_chars = [], eos_char_pos = -1):
+def parse_text(text, tkn_regex=r" *[\w'\"\.!?-]+", bl_regex=r"\.\.+|[,;]| -"):
 	# Straighten quotation marks
 	text = text.replace('“','"').replace('”','"')
 	text = text.replace("’","'").replace("`","'")
@@ -60,11 +55,35 @@ def parse_text(text, tkn_regex=r" *[\w'\"\.!?-]+", bl_regex=r"\.\.+|[,;]| -", eo
 	text = re.sub(r"\s\s+", " ", text)
 	# Divide the sentence
 	text_tkn = re.findall(tkn_regex, text)
+	return text_tkn	
+
+'''
+This function parses the structure of the text that are given in the form of a
+list of word tokens. If eos_chars are provided, the function will label the 
+position of each word relative to the sentence and the utterance. It also 
+allows the user to define a set of spec_chars to label.
+eos_chars:	   characters that mark the end of sentence. If the list is empty,
+			   the function will no longer mark the composition of the text
+eos_char_pos:  the position where eos characters are expected. By default the
+			   function will look for the last char in every string to identify
+			   eos
+spec_chars:	   special characters to mark. 
+spec_chars_pos:the position where the special characters are expected. The len
+			   of this list should match the len of spec_chars. Note that if
+			   "*" is included, the function will search for all the chars 
+			   in each token for a match.
+spec_chars_labels:the key name for the mask of each spec_chars. The len of this
+			   list should match the len of spec_chars.
+'''
+def parse_structure(text_tkn, eos_chars = [], eos_chars_pos = -1, spec_chars = [], spec_chars_pos = [], spec_chars_labels = []):
 	# label text composition
+	labels_dict = dict()
 	if len(eos_chars) > 0:
 		eos_pos = []
 		for i,tkn in enumerate(text_tkn):
-			if tkn[eos_char_pos] in eos_chars: eos_pos.append(i)
+			if tkn[eos_chars_pos] in eos_chars: eos_pos.append(i)
+		if len(text_tkn) > 0 and len(eos_pos) == 0: eos_pos.append(len(text_tkn) - 1)
+		elif len(text_tkn) > 0 and eos_pos[-1] != len(text_tkn) - 1: eos_pos.append(len(text_tkn) - 1)
 		pos_labels = np.zeros((4, len(text_tkn)), dtype = int)
 		pos_labels[2] = np.arange(len(text_tkn), dtype = int)
 		prev_s_pos = 0
@@ -75,19 +94,37 @@ def parse_text(text, tkn_regex=r" *[\w'\"\.!?-]+", bl_regex=r"\.\.+|[,;]| -", eo
 			prev_s_pos = s_end
 		pos_labels[:3] = np.add(pos_labels[:3], 1)
 		pos_labels[3][eos_pos] = 1
-		labels_dict = dict({"sentence_label":pos_labels[0], "sentence_pos":pos_labels[1], "utterance_pos":pos_labels[2], "eos":np.array(pos_labels[3], dtype = bool)})
-		return text_tkn, labels_dict
-	return text_tkn	
+		labels_dict.update({"sentence_label":pos_labels[0], "sentence_pos":pos_labels[1], "utterance_pos":pos_labels[2], "eos":np.array(pos_labels[3], dtype = bool)})
+	# label special characters
+	if len(spec_chars) > 0:
+		char_masks = []
+		for char in spec_chars:
+			char_masks.append(np.zeros(len(text_tkn), dtype = bool))
+		for i,tkn in enumerate(text_tkn):
+			for c_ind in range(len(spec_chars)):
+				curr_char = spec_chars[c_ind]
+				curr_char_pos = spec_chars_pos[c_ind]
+				if curr_char_pos == "*":
+					if curr_char in tkn:
+						char_mask[c_ind][i] = 1
+				elif len(tkn) > curr_char_pos:
+					if tkn[curr_char_pos] == curr_char:
+						char_masks[c_ind][i] = 1
+		for c_ind in range(len(spec_chars_labels)):
+			labels_dict.update({spec_chars_labels[c_ind]:char_masks[c_ind]})
+
+	return labels_dict
 
 
-'''
+''' 
 This function uses GPT2 to generate the cloze probabilities of a given list of
-word-level tokens. One way to obtain such tokens is to pass the text to the
+word-level tokins. One way to obtain such tokins is to pass the text to the
 function parse_text, and pass its output text_tkn as an input to this function. This function will calculate the conditional probability of each of the 
-word-level token given the tokens preceeding it. Importantly, the first 
-word-level token is assigned with the probability value of 0.
+word-level tokin given the tokins preceeding it. Importantly, the first 
+word-level tokin is assigned with the probability value of 0.
 '''
 def cloze_allword(text_tkn):
+	import timeit
 	pos_arr = []
 	curr_pos = 0
 	encoding = []
@@ -96,7 +133,7 @@ def cloze_allword(text_tkn):
 		curr_encoding = tokenizer.encode(tkn)
 		# join the current encoding into the utterance encoding
 		encoding.extend(curr_encoding)
-		# marks the indices of the subword tokins that belone to the same word
+		# marks the indices of the subword tokins that belong to the same word
 		# tokin
 		pos_labels = np.arange(curr_pos, curr_pos + len(curr_encoding))
 		pos_arr.append(pos_labels)	
@@ -105,7 +142,7 @@ def cloze_allword(text_tkn):
 	tokens_tensor = torch.tensor([encoding])
 	with torch.no_grad():
 		outputs = model(tokens_tensor)
-		 = outputs[0][0]
+		predictions = outputs[0][0]
 	results = predictions.detach().cpu().numpy()
 	# Transform scores into log probability
 	for r in range(results.shape[0] - 1):
@@ -123,6 +160,7 @@ def cloze_allword(text_tkn):
 			tkn_prob.append(results[pos-1][encoding[pos]])
 		conditional_probs.append(np.sum(tkn_prob))
 	conditional_probs = np.exp(np.array(conditional_probs))
+
 	return np.insert(conditional_probs, 0, 0)
 
 def cloze_finalword(text):
