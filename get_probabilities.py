@@ -124,7 +124,6 @@ word-level tokin given the tokins preceeding it. Importantly, the first
 word-level tokin is assigned with the probability value of 0.
 '''
 def cloze_allword(text_tkn):
-	import timeit
 	pos_arr = []
 	curr_pos = 0
 	encoding = []
