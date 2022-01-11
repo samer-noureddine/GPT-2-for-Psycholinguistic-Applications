@@ -194,7 +194,6 @@ def cloze_finalword(text):
 	# I should make the below code less awkward when I find the time
 	start = -1-len(cw_encoding)
 	for j in range(start,-1,1):
-			print (j)
 			raw_output = []
 			for i in predictions[-1][j]:
 					raw_output.append(i.item())
