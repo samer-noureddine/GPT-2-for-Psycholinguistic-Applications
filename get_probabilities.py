@@ -27,15 +27,15 @@ model.eval()
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2-large')
 
 '''
-This function parses the text into word tokins and mark the composition of the 
-text (i.e., the pos of a word in the sentence/text ). This function is
-necessary because GPT2 tokenizer will likely break words into sub-word tokens.
-By first dividing the text into word-level tokins (which also grants us the
+This function parses the text into word tokens and marks the composition of the 
+text (i.e., the position of a word in the sentence/text ). This function is
+necessary because the GPT2 tokenizer will likely break words into sub-word tokens.
+By first dividing the text into word-level tokens (which also grants us the
 liberty of defining "words": e.g., we want to count the period as part of the 
-last word) and then passing each tokin to the GPT2 tokenizer, we know how each
-word is converted into sub-word tokins and can therefore calculate the cloze of
+last word) and then passing each token to the GPT2 tokenizer, we know how each
+word is converted into sub-word tokens and can therefore calculate the cloze of
 each word by calculating the conditional probabilities of each word's sub-word
-tokins. (Note that GPT2 Tokenizer is context independent, so it doesn't matter
+tokens. (Note that GPT2 Tokenizer is context independent, so it doesn't matter
 whether we pass the words individually or we pass the entire text altogether)
 
 text:		  text to parse
@@ -118,22 +118,22 @@ def parse_structure(text_tkn, eos_chars = [], eos_chars_pos = -1, spec_chars = [
 
 ''' 
 This function uses GPT2 to generate the cloze probabilities of a given list of
-word-level tokins. One way to obtain such tokins is to pass the text to the
+word-level tokens. One way to obtain such tokens is to pass the text to the
 function parse_text, and pass its output text_tkn as an input to this function. This function will calculate the conditional probability of each of the 
-word-level tokin given the tokins preceeding it. Importantly, the first 
-word-level tokin is assigned with the probability value of 0.
+word-level token given the tokens preceeding it. Importantly, the first 
+word-level token is assigned with the probability value of 0.
 '''
 def cloze_allword(text_tkn):
 	pos_arr = []
 	curr_pos = 0
 	encoding = []
 	for tkn in text_tkn:
-		# pass each tokin into the GPT2 tokenizer
+		# pass each token into the GPT2 tokenizer
 		curr_encoding = tokenizer.encode(tkn)
 		# join the current encoding into the utterance encoding
 		encoding.extend(curr_encoding)
-		# marks the indices of the subword tokins that belong to the same word
-		# tokin
+		# marks the indices of the subword tokens that belong to the same word
+		# token
 		pos_labels = np.arange(curr_pos, curr_pos + len(curr_encoding))
 		pos_arr.append(pos_labels)	
 		curr_pos += len(curr_encoding)
@@ -155,7 +155,7 @@ def cloze_allword(text_tkn):
 		# each tkn_pos is an array of position indices
 		for pos in tkn_pos:
 			# we use pos-1 because the results at pos-1 is the prediction for 
-			# the upcoming tokin at pos
+			# the upcoming token at pos
 			tkn_prob.append(results[pos-1][encoding[pos]])
 		conditional_probs.append(np.sum(tkn_prob))
 	conditional_probs = np.exp(np.array(conditional_probs))
